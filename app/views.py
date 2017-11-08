@@ -7,6 +7,16 @@ def hello():
     return "Hello World!"
 
 
+@app.route('/db_meta_data')
+def get_db_meta_data():
+    metadata = DBMetaData.query.all()
+    if len(metadata) > 0:
+        metadata = metadata[0].__dict__.copy()
+        del metadata['_sa_instance_state']
+    else:
+        metadata = None
+    return jsonify(metadata)
+
 @app.route('/<name>')
 def hello_name(name):
     return "Hello {}!".format(name)

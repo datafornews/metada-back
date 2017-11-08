@@ -85,7 +85,8 @@ class DBMetaData(db.Model):
     __tablename__ = 'db_meta_data'
 
     id = db.Column(db.Integer, primary_key=True)
-    version = db.Column(db.Integer)
+    version = db.Column(db.String())
+    version_string = db.Column(db.String())
     description = db.Column(db.String())
 
     def __repr__(self):
