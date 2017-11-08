@@ -78,4 +78,15 @@ class Edge(db.Model):
         self.special = special
 
     def __repr__(self):
-        return '<Edge: {} -> {}>'.format(self.value, self.parent.name, self.child.name)
+        return '<Edge:{} {} -> {}>'.format(self.value, self.parent.name, self.child.name)
+
+
+class DBMetaData(db.Model):
+    __tablename__ = 'db_version'
+
+    id = db.Column(db.Integer, primary_key=True)
+    version = db.Column(db.Integer)
+    description = db.Column(db.String())
+
+    def __repr__(self):
+        return '<DBMetaData version:{}>'.format(self.version)
