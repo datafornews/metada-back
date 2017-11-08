@@ -82,7 +82,7 @@ class Edge(db.Model):
 
 
 class DBMetaData(db.Model):
-    __tablename__ = 'db_version'
+    __tablename__ = 'db_meta_data'
 
     id = db.Column(db.Integer, primary_key=True)
     version = db.Column(db.Integer)
