@@ -56,6 +56,9 @@ class EntityModelView(SafeModelView):
 class EdgeModelView(SafeModelView):
     column_searchable_list = ['child.name', 'parent.name']
 
+class DBMetadataModelView(SafeModelView):
+    column_searchable_list = ['description', 'version', 'version_string']
+
 
 admin = Admin(
     app,
@@ -66,6 +69,7 @@ admin = Admin(
 
 admin.add_view(EntityModelView(graph_models.Entity, db.session))
 admin.add_view(EdgeModelView(graph_models.Edge, db.session))
+admin.add_view(DBMetadataModelView(graph_models.DBMetaData, db.session))
 
 @security.context_processor
 def security_context_processor():
