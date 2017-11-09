@@ -1,6 +1,7 @@
 import os
 import json
-from models import *
+from app.graph_models import *
+from app.user_models import *
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
@@ -147,13 +148,25 @@ def make_consistent(db):
             db.session.object_session(ed).commit()
 
 
+def create_DBMetaData(db):
+    if len(DBMetaData.query.all()) == 0:
+        dbmd = DBMetaData(
+            version=1,
+            description='Initial DB',
+            version_string="0.0.1"
+        )
+        db.session.add(dbmd)
+        db.session.commit()
+
 
 if __name__ == "__main__":
     see(db)
-    if 'y' in input('drop all?'):
-        db.drop_all()
-    if 'y' in input('add and delete?'):
-        add_all(db)
-        see(db)
-    if 'y' in input('Make consistent?'):
-        make_consistent(db)
+    # if 'y' in input('drop all?'):
+    #     db.drop_all()
+    # if 'y' in input('add and delete?'):
+    #     add_all(db)
+    #     see(db)
+    # if 'y' in input('Make consistent?'):
+    #     make_consistent(db)
+    if 'y' in input('Create DBMetaData?'):
+        create_DBMetaData(db)
