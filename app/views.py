@@ -1,5 +1,5 @@
 from app import app
-from app.graph_models import *
+from app.models.Graph_model import *
 from flask import render_template, jsonify
 
 @app.route('/')
@@ -20,11 +20,6 @@ def get_db_meta_data():
 @app.route('/<name>')
 def hello_name(name):
     return "Hello {}!".format(name)
-
-
-@app.route('/react/')
-def render_react():
-    return render_template('index.html')
 
 
 @app.route('/data/')
