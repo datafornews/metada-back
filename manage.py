@@ -2,7 +2,8 @@ import os
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
-from app import app, db, graph_models, user_models
+from app import app, db
+from app.models import *
 
 
 app.config.from_object(os.environ['APP_SETTINGS'])

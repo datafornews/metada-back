@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, url_for, redirect, request, abort
 
 from flask_security import Security, SQLAlchemyUserDatastore, current_user
+from flask_bcrypt import Bcrypt
 
 from flask_admin import Admin, form
 from flask_admin import helpers as admin_helpers
@@ -13,13 +14,15 @@ from flask_admin.contrib.sqla import ModelView, fields
 app = Flask(__name__)
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+bcrypt = Bcrypt(app)
 CORS(app)
 db = SQLAlchemy(app)
 
-from app import graph_models, user_models
+from app.models import Graph_model, User_model
+
 from app import views
 
-user_datastore = SQLAlchemyUserDatastore(db, user_models.User, user_models.Role)
+user_datastore = SQLAlchemyUserDatastore(db, User_model.User, User_model.Role)
 security = Security(app, user_datastore)
 
 
@@ -67,9 +70,9 @@ admin = Admin(
     template_mode='bootstrap3',
 )
 
-admin.add_view(EntityModelView(graph_models.Entity, db.session))
-admin.add_view(EdgeModelView(graph_models.Edge, db.session))
-admin.add_view(DBMetadataModelView(graph_models.DBMetaData, db.session))
+admin.add_view(EntityModelView(Graph_model.Entity, db.session))
+admin.add_view(EdgeModelView(Graph_model.Edge, db.session))
+admin.add_view(DBMetadataModelView(Graph_model.DBMetaData, db.session))
 
 @security.context_processor
 def security_context_processor():
@@ -79,3 +82,6 @@ def security_context_processor():
         h=admin_helpers,
         get_url=url_for
     )
+
+from app.auth.views import auth_blueprint
+app.register_blueprint(auth_blueprint)
