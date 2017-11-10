@@ -8,7 +8,6 @@ from flask_security import Security, SQLAlchemyUserDatastore, current_user
 from flask_admin import Admin, form
 from flask_admin import helpers as admin_helpers
 from flask_admin.contrib.sqla import ModelView, fields
-import datetime
 
 
 app = Flask(__name__)
@@ -20,8 +19,7 @@ db = SQLAlchemy(app)
 from app import graph_models, user_models
 from app import views
 
-user_datastore = SQLAlchemyUserDatastore(
-    db, user_models.User, user_models.Role)
+user_datastore = SQLAlchemyUserDatastore(db, user_models.User, user_models.Role)
 security = Security(app, user_datastore)
 
 
@@ -32,15 +30,6 @@ class SafeModelView(ModelView):
             return False
 
         if current_user.has_role('superuser'):
-            if not current_user.confirmed_at:
-                current_user.confirmed_at = datetime.datetime.now()
-                db.session.commit()
-            else:
-                now = datetime.datetime.now()
-                if now - current_user.confirmed_at > datetime.timedelta(minutes=30):
-                    return False
-                current_user.confirmed_at = datetime.datetime.now()
-                db.session.commit()
             return True
 
         return False
@@ -57,18 +46,15 @@ class SafeModelView(ModelView):
                 # login
                 return redirect(url_for('security.login', next=request.url))
 
-
 class EntityModelView(SafeModelView):
     column_searchable_list = ['name']
     column_list = ['name', 'website', 'wiki', 'wiki_page_id', 'category',
                    'long_name', 'other_groups', 'parents', 'children']
-    column_editable_list = ['name', 'website', 'wiki',
-                            'wiki_page_id', 'other_groups', 'long_name']
+    column_editable_list = ['name', 'website', 'wiki', 'wiki_page_id','other_groups', 'long_name']
 
 
 class EdgeModelView(SafeModelView):
     column_searchable_list = ['child.name', 'parent.name']
-
 
 class DBMetadataModelView(SafeModelView):
     column_searchable_list = ['description', 'version', 'version_string']
@@ -84,7 +70,6 @@ admin = Admin(
 admin.add_view(EntityModelView(graph_models.Entity, db.session))
 admin.add_view(EdgeModelView(graph_models.Edge, db.session))
 admin.add_view(DBMetadataModelView(graph_models.DBMetaData, db.session))
-
 
 @security.context_processor
 def security_context_processor():
