@@ -6,6 +6,7 @@ import datetime
 
 from app import app, db, bcrypt
 from flask_security import UserMixin, RoleMixin
+from flask_security.utils import hash_password
 
 roles_users = db.Table(
     'roles_users',
@@ -45,9 +46,7 @@ class User(db.Model, UserMixin):
                  active=None,
                  roles=['user']):
         self.email = email
-        self.password = bcrypt.generate_password_hash(
-            password, app.config.get('BCRYPT_LOG_ROUNDS')
-        ).decode()
+        self.password = hash_password(password)
         self.registered_on = datetime.datetime.now()
         self.first_name = first_name
         self.last_name = last_name
