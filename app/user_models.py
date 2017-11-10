@@ -37,3 +37,8 @@ class User(db.Model, UserMixin):
 
     def __str__(self):
         return self.email
+
+    def __repr__(self):
+        return '<User {} at {}>'.format(
+            self.first_name + ' ' + self.last_name or self.email, id(self)
+        )
