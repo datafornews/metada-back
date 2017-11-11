@@ -55,6 +55,9 @@ class EntityModelView(SafeModelView):
                    'long_name', 'other_groups', 'parents', 'children']
     column_editable_list = ['name', 'website', 'wiki', 'wiki_page_id','other_groups', 'long_name']
 
+class UserModelView(SafeModelView):
+    column_searchable_list = ['email', 'first_name', 'last_name']
+
 
 class EdgeModelView(SafeModelView):
     column_searchable_list = ['child.name', 'parent.name']
@@ -73,6 +76,7 @@ admin = Admin(
 admin.add_view(EntityModelView(Graph_model.Entity, db.session))
 admin.add_view(EdgeModelView(Graph_model.Edge, db.session))
 admin.add_view(DBMetadataModelView(Graph_model.DBMetaData, db.session))
+admin.add_view(UserModelView(User_model.User, db.session))
 
 @security.context_processor
 def security_context_processor():
