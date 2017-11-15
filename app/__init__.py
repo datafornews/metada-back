@@ -73,7 +73,7 @@ class UserModelView(SafeModelView):
 
     #  Add our own password form field - call it password2
     form_extra_fields = {
-        'password2': PasswordField('Password')
+        'password2': PasswordField('Change Password to')
     }
 
     # set the form fields to use
@@ -89,7 +89,8 @@ class UserModelView(SafeModelView):
 
     def on_model_change(self, form, User, is_created):
         if form.password2.data is not None:
-            User.set_password(form.password2.data)
+            if form.password2.data != "":
+                User.set_password(form.password2.data)
 
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
