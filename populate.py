@@ -1,7 +1,7 @@
 import os
 import json
-from app.graph_models import *
-from app.user_models import *
+from app.models.Graph_model import *
+from app.models.User_model import *
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
@@ -158,6 +158,22 @@ def create_DBMetaData(db):
         db.session.add(dbmd)
         db.session.commit()
 
+def update_wiki_data_from_wiki_links(db):
+    for e in Entity.query.all():
+        if e.wiki_link:
+            lang = e.wiki_link.split('.')[0].split('/')[-1]
+            title = e.wiki_link.split('/')[-1] if wl[-1] != '/' else wl.split('/')[-2]
+            if e.wiki:
+                e.wiki.title = title
+                e.wiki.lang = lang
+            else:
+                w = WikiData()
+                w.entity_id = e.id
+                w.title = title
+                w.lang = lang
+                db.session.add(w)
+            db.session.commit()
+
 
 if __name__ == "__main__":
     see(db)
@@ -168,5 +184,5 @@ if __name__ == "__main__":
     #     see(db)
     # if 'y' in input('Make consistent?'):
     #     make_consistent(db)
-    if 'y' in input('Create DBMetaData?'):
-        create_DBMetaData(db)
+    # if 'y' in input('Create DBMetaData?'):
+    #     create_DBMetaData(db)
