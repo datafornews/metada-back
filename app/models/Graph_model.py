@@ -20,16 +20,17 @@ class Entity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
     website = db.Column(db.String())
-    wiki = db.Column(db.String())
-    wiki_page_id = db.Column(db.Integer, default=-1)
+    wiki = relationship("WikiData", uselist=False, backref="entity")
+    wiki_link = db.Column(db.String())
     category = db.Column(sqlalchemy_utils.ChoiceType(ownership))
     long_name = db.Column(db.String())
     other_groups = db.Column(db.String())
 
-    def __init__(self, name, website=None, wiki=None, category=None, long_name=None, other_groups=None):
+    def __init__(self, name=None, website=None, wiki=None, wiki_page_id=None, category=None, long_name=None, other_groups=None):
         self.name = name
         self.website = website
         self.wiki = wiki
+        self.wiki_page_id = wiki_page_id
         self.category = category
         self.long_name = long_name
         self.other_groups = other_groups
@@ -43,6 +44,18 @@ class Entity(db.Model):
     def get_children(self):
         return [x.child for x in self.higher_edges]
 
+
+class WikiData(db.Model):
+    __tablename__ = 'wikidatas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    entity_id = db.Column(db.Integer, ForeignKey('entities.id'))
+    # entity = relationship(Entity, primaryjoin= entity_id == Entity.id, backref='entities')
+    title = db.Column(db.String())
+    lang = db.Column(db.String())
+
+    def __repr__(self):
+        return '<WD: id {} title {}>'.format(self.id, self.title)
 
 class Edge(db.Model):
     __tablename__ = 'edges'
@@ -60,12 +73,12 @@ class Edge(db.Model):
     child = relationship(
         Entity,
         primaryjoin=child_id == Entity.id,
-        backref='children')
+        backref='parents')
 
     parent = relationship(
         Entity,
         primaryjoin=parent_id == Entity.id,
-        backref='parents')
+        backref='children')
 
     value = db.Column(db.Integer)
 
@@ -78,7 +91,7 @@ class Edge(db.Model):
         self.special = special
 
     def __repr__(self):
-        return '<Edge:{} {} -> {}>'.format(self.value, self.parent.name, self.child.name)
+        return '<Edge: {} -> {}>'.format(self.value, self.parent.name, self.child.name)
 
 
 class DBMetaData(db.Model):
