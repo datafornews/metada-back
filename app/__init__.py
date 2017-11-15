@@ -54,11 +54,18 @@ class SafeModelView(ModelView):
 
 
 class EntityModelView(SafeModelView):
-    column_searchable_list = ['name']
-    column_list = ['name', 'website', 'wiki', 'wiki_page_id', 'category',
-                   'long_name', 'other_groups', 'parents', 'children']
-    column_editable_list = ['name', 'website', 'wiki',
-                            'wiki_page_id', 'other_groups', 'long_name']
+    column_searchable_list = ['name', 'wiki.title']
+    column_list = ['name', 'website', 'wiki_link', 'wiki', 'long_name', 
+                    'other_groups',
+                   'category', 'parents', 'children']
+    column_editable_list = ['name', 'website', 'wiki_link',
+                            'other_groups', 'long_name']
+
+
+class WikiDataModelView(SafeModelView):
+    column_searchable_list = ['title', 'lang', 'entity.name']
+    column_list = ['title', 'lang', 'entity.name']
+    column_editable_list = ['title', 'lang']
 
 
 class UserModelView(SafeModelView):
@@ -127,6 +134,7 @@ admin = Admin(
 )
 
 admin.add_view(EntityModelView(Graph_model.Entity, db.session))
+admin.add_view(WikiDataModelView(Graph_model.WikiData, db.session))
 admin.add_view(EdgeModelView(Graph_model.Edge, db.session))
 admin.add_view(DBMetadataModelView(Graph_model.DBMetaData, db.session))
 admin.add_view(UserModelView(User_model.User, db.session))
