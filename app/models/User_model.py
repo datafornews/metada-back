@@ -40,11 +40,19 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
 
-    def __init__(self, email, password,
+    def set_password(self, password):
+        self.password = hash_password(password)
+
+    def __init__(self,
+                 email=None,
+                 password=None,
                  first_name=None,
                  last_name=None,
                  active=None,
-                 roles=['user']):
+                 confirmed_at=None,
+                 registered_on=None,
+                 roles=['user']
+                 ):
         self.email = email
         self.password = hash_password(password)
         self.registered_on = datetime.datetime.now()
@@ -79,6 +87,7 @@ class User(db.Model, UserMixin):
             )
         except Exception as e:
             return e
+
     @staticmethod
     def decode_auth_token(auth_token):
         """
@@ -97,6 +106,7 @@ class User(db.Model, UserMixin):
             return 'Signature expired. Please log in again.'
         except jwt.InvalidTokenError:
             return 'Invalid token. Please log in again.'
+
 
 class BlacklistToken(db.Model):
     """
