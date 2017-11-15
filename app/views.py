@@ -2,6 +2,7 @@ from app import app
 from app.models.Graph_model import *
 from flask import render_template, jsonify
 
+
 @app.route('/')
 def hello():
     return "Hello World!"
@@ -17,6 +18,7 @@ def get_db_meta_data():
         metadata = None
     return jsonify(metadata)
 
+
 @app.route('/<name>')
 def hello_name(name):
     return "Hello {}!".format(name)
@@ -31,9 +33,15 @@ def get_full_data():
         dic['category'] = dic['category'].code
         if dic['website']:
             dic['website'] = dic['website']
-        if dic['wiki']:
-            dic['wiki'] = dic['wiki']
+        if en.wiki:
+            dic['wiki'] = wiki_data_to_dict(en.wiki)
         return dic
+
+    def wiki_data_to_dict(wd):
+        return {
+            'lang': wd.lang,
+            'title': wd.title
+        }
 
     def edge_to_dict(ed):
         dic = ed.__dict__.copy()
