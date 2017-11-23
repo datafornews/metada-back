@@ -1,3 +1,4 @@
+import datetime
 from flask_admin import helpers as admin_helpers
 from flask_admin.contrib.sqla import ModelView, fields
 from flask_admin.form.fields import Select2Field
@@ -71,11 +72,12 @@ class EntityModelView(SafeModelView):
     # column_searchable_list = ['name', 'wiki.title', 'id']
     column_searchable_list = ['name', 'id']
 
-    # column_list = ['name', 'website', 'wiki_link', 'wiki', 'long_name',
-    #                'other_groups',
-    #                'category', 'parents', 'children', 'id']
     column_list = ['name', 'website', 'wiki_link', 'long_name',
-                   'other_groups', 'category', 'id']
+                   'other_groups', 'category', 'id',
+                   'updated_by', 'updated_at', 'created_by', 'created_at', # 'wiki',
+                   ]
+    # column_list = ['name', 'website', 'wiki_link', 'long_name',
+    #                'other_groups', 'category', 'id']
     column_sortable_list = ['name', 'id']
 
     column_editable_list = ['name', 'website', 'wiki_link',
@@ -90,7 +92,15 @@ class EntityModelView(SafeModelView):
             'choices': ownership,
         },
     }
-            
+
+    def on_model_change(self, form, entity, is_created):
+        print(current_user)
+        now = datetime.datetime.now()
+        if is_created:
+            entity.created_by = current_user
+            entity.created_at = now
+        entity.updated_by = current_user
+        entity.updated_at = now
 
 
 class WikiDataModelView(SafeModelView):
@@ -125,10 +135,10 @@ class UserModelView(SafeModelView):
                     'roles',
                     )
 
-    def on_model_change(self, form, User, is_created):
+    def on_model_change(self, form, user, is_created):
         if form.password2.data is not None:
             if form.password2.data != "":
-                User.set_password(form.password2.data)
+                user.set_password(form.password2.data)
 
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
