@@ -25,6 +25,10 @@ class Entity(db.Model):
     category = db.Column(sqlalchemy_utils.ChoiceType(ownership))
     long_name = db.Column(db.String())
     other_groups = db.Column(db.String())
+    created_at = db.Column(db.DateTime())
+    updated_at = db.Column(db.DateTime())
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __init__(self, name=None, website=None, wiki=None, wiki_page_id=None, category=None, long_name=None, other_groups=None):
         self.name = name
@@ -36,7 +40,7 @@ class Entity(db.Model):
         self.other_groups = other_groups
 
     def __repr__(self):
-        return '<Entity: id {} Name {}>'.format(self.id, self.name)
+        return '<Entity {}: {}>'.format(self.id, self.name)
 
     def get_parents(self):
         return [x.parent for x in self.lower_edges]
@@ -84,14 +88,14 @@ class Edge(db.Model):
 
     special = db.Column(db.String())
 
-    def __init__(self, parent, child, value=None, special=None):
+    def __init__(self, parent=None, child=None, value=None, special=None):
         self.child = child
         self.parent = parent
         self.value = value
         self.special = special
 
     def __repr__(self):
-        return '<Edge: {} -> {}>'.format(self.value, self.parent.name, self.child.name)
+        return '<Edge: {} -> {}>'.format(self.parent.name, self.child.name)
 
 
 class DBMetaData(db.Model):

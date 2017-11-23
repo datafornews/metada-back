@@ -16,6 +16,7 @@ roles_users = db.Table(
 
 
 class Role(db.Model, RoleMixin):
+    __tablename__ = 'role'
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
@@ -29,6 +30,8 @@ class Role(db.Model, RoleMixin):
 
 
 class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
@@ -39,6 +42,10 @@ class User(db.Model, UserMixin):
     registered_on = db.Column(db.DateTime())
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
+    entities_created = db.relationship('Entity', backref='created_by',
+                                lazy='dynamic', primaryjoin='User.id==Entity.created_by_id')
+    entities_updated = db.relationship('Entity', backref='updated_by',
+                                lazy='dynamic', primaryjoin='User.id==Entity.updated_by_id')
 
     def set_password(self, password):
         self.password = hash_password(password)
