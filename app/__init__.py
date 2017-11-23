@@ -3,15 +3,13 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, url_for, redirect, request, abort
 
-from flask_security import Security, SQLAlchemyUserDatastore, current_user
-
-from wtforms.fields import PasswordField
+from flask_security import Security, SQLAlchemyUserDatastore
 
 from flask_bcrypt import Bcrypt
 
 from flask_admin import Admin, form
 from flask_admin import helpers as admin_helpers
-from flask_admin.contrib.sqla import ModelView, fields
+
 
 
 app = Flask(__name__)
@@ -22,108 +20,12 @@ CORS(app)
 db = SQLAlchemy(app)
 
 from app.models import Graph_model, User_model
+from app.admin import model_views
 
 from app import views
 
 user_datastore = SQLAlchemyUserDatastore(db, User_model.User, User_model.Role)
 security = Security(app, user_datastore)
-
-
-class SafeModelView(ModelView):
-
-    def is_accessible(self):
-        if not current_user.is_active or not current_user.is_authenticated:
-            return False
-
-        if current_user.has_role('moderator'):
-            return True
-
-        return False
-
-    def _handle_view(self, name, **kwargs):
-        """
-        Override builtin _handle_view in order to redirect users when a view is not accessible.
-        """
-        if not self.is_accessible():
-            if current_user.is_authenticated:
-                # permission denied
-                abort(403)
-            else:
-                # login
-                return redirect(url_for('security.login', next=request.url))
-
-
-class EntityModelView(SafeModelView):
-    column_searchable_list = ['name', 'wiki.title']
-    column_list = ['name', 'website', 'wiki_link', 'wiki', 'long_name', 
-                    'other_groups',
-                   'category', 'parents', 'children']
-    column_editable_list = ['name', 'website', 'wiki_link',
-                            'other_groups', 'long_name']
-
-
-class WikiDataModelView(SafeModelView):
-    column_searchable_list = ['title', 'lang', 'entity.name']
-    column_list = ['title', 'lang', 'entity.name']
-    column_editable_list = ['title', 'lang']
-
-
-class UserModelView(SafeModelView):
-    # https://stackoverflow.com/questions/39185230/flask-admin-overrides-password-when-user-model-is-changed
-    column_searchable_list = ['email', 'first_name', 'last_name']
-
-    column_list = ['first_name', 'last_name', 'email', 'roles',
-                   'active', 'confirmed_at', 'registered_on', 'password']
-
-    form_excluded_columns = ('password')
-    #  Form will now use all the other fields in the model
-
-    #  Add our own password form field - call it password2
-    form_extra_fields = {
-        'password2': PasswordField('Change Password to')
-    }
-
-    # set the form fields to use
-    form_columns = ('email',
-                    'password2',
-                    'first_name',
-                    'last_name',
-                    'active',
-                    'confirmed_at',
-                    'registered_on',
-                    'roles',
-                    )
-
-    def on_model_change(self, form, User, is_created):
-        if form.password2.data is not None:
-            if form.password2.data != "":
-                User.set_password(form.password2.data)
-
-    def is_accessible(self):
-        if not current_user.is_active or not current_user.is_authenticated:
-            return False
-
-        if current_user.has_role('superuser'):
-            return True
-
-        return False
-
-
-class EdgeModelView(SafeModelView):
-    column_searchable_list = ['child.name', 'parent.name']
-
-
-class DBMetadataModelView(SafeModelView):
-    column_searchable_list = ['description', 'version', 'version_string']
-
-    def is_accessible(self):
-        if not current_user.is_active or not current_user.is_authenticated:
-            return False
-
-        if current_user.has_role('superuser'):
-            return True
-
-        return False
 
 
 admin = Admin(
@@ -133,11 +35,12 @@ admin = Admin(
     template_mode='bootstrap3',
 )
 
-admin.add_view(EntityModelView(Graph_model.Entity, db.session))
-admin.add_view(WikiDataModelView(Graph_model.WikiData, db.session))
-admin.add_view(EdgeModelView(Graph_model.Edge, db.session))
-admin.add_view(DBMetadataModelView(Graph_model.DBMetaData, db.session))
-admin.add_view(UserModelView(User_model.User, db.session))
+admin.add_view(model_views.EntityModelView(Graph_model.Entity, db.session))
+admin.add_view(model_views.WikiDataModelView(Graph_model.WikiData, db.session))
+admin.add_view(model_views.EdgeModelView(Graph_model.Edge, db.session))
+admin.add_view(model_views.DBMetadataModelView(
+    Graph_model.DBMetaData, db.session))
+admin.add_view(model_views.UserModelView(User_model.User, db.session))
 
 
 @security.context_processor
