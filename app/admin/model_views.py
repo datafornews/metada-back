@@ -94,7 +94,6 @@ class EntityModelView(SafeModelView):
     }
 
     def on_model_change(self, form, entity, is_created):
-        print(current_user)
         now = datetime.datetime.now()
         if is_created:
             entity.created_by = current_user
@@ -152,6 +151,14 @@ class UserModelView(SafeModelView):
 
 class EdgeModelView(SafeModelView):
     column_searchable_list = ['child.name', 'parent.name', 'value']
+
+    def on_model_change(self, form, edge, is_created):
+        now = datetime.datetime.now()
+        if is_created:
+            edge.created_by = current_user
+            edge.created_at = now
+        edge.updated_by = current_user
+        edge.updated_at = now
 
 
 class DBMetadataModelView(SafeModelView):
