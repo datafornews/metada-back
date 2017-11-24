@@ -46,6 +46,10 @@ class User(db.Model, UserMixin):
                                 lazy='dynamic', primaryjoin='User.id==Entity.created_by_id')
     entities_updated = db.relationship('Entity', backref='updated_by',
                                 lazy='dynamic', primaryjoin='User.id==Entity.updated_by_id')
+    edges_created = db.relationship('Edge', backref='created_by',
+                                lazy='dynamic', primaryjoin='User.id==Edge.created_by_id')
+    edges_updated = db.relationship('Edge', backref='updated_by',
+                                lazy='dynamic', primaryjoin='User.id==Edge.updated_by_id')
 
     def set_password(self, password):
         self.password = hash_password(password)

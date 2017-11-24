@@ -88,6 +88,11 @@ class Edge(db.Model):
 
     special = db.Column(db.String())
 
+    created_at = db.Column(db.DateTime())
+    updated_at = db.Column(db.DateTime())
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
     def __init__(self, parent=None, child=None, value=None, special=None):
         self.child = child
         self.parent = parent
