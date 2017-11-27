@@ -110,7 +110,7 @@ class EntityModelView(RoleSafeModelView):
         ('o', 'other')
     ]
     # column_searchable_list = ['name', 'wiki.title', 'id']
-    column_searchable_list = ['name', 'id']
+    column_searchable_list = ['name', 'id', 'updated_at', 'created_at']
 
     superuser_column_list = ['name', 'website', 'wiki_link', 'long_name',
                              'other_groups', 'category',
