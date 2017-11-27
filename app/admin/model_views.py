@@ -113,13 +113,13 @@ class EntityModelView(RoleSafeModelView):
     column_searchable_list = ['name', 'id']
 
     superuser_column_list = ['name', 'website', 'wiki_link', 'long_name',
-                             'other_groups', 'category', 'id',
-                             'updated_by', 'updated_at', 'created_by', 'created_at',  # 'wiki',
+                             'other_groups', 'category',
+                             'updated_by', 'updated_at', 'created_by', 'created_at', 'id' # 'wiki',
                              ]
     moderator_column_list = ['name', 'website', 'wiki_link', 'long_name',
                              'other_groups', 'category', 'id']
-    superuser_form_columns = superuser_column_list
-    moderator_form_columns = moderator_column_list
+    superuser_form_columns = superuser_column_list[:-1]
+    moderator_form_columns = moderator_column_list[:-1]
 
     column_sortable_list = ['name', 'id']
     column_editable_list = ['name', 'website', 'wiki_link',
