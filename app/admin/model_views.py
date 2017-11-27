@@ -200,11 +200,11 @@ class UserModelView(SafeModelView):
 class EdgeModelView(RoleSafeModelView):
     column_searchable_list = ['child.name', 'parent.name', 'value']
 
-    superuser_column_list = ['parent', 'child', 'value',
+    superuser_column_list = ['parent', 'child', 'value', 'special',
                              'updated_by', 'updated_at', 'created_by', 'created_at']
     superuser_form_columns = superuser_column_list
 
-    moderator_column_list = ['parent', 'child', 'value']
+    moderator_column_list = ['parent', 'child', 'value', 'special',]
     moderator_form_columns = moderator_column_list
 
     def on_model_change(self, form, edge, is_created):
