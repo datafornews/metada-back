@@ -35,6 +35,9 @@ def get_full_data():
             dic['website'] = dic['website']
         if en.wiki:
             dic['wiki'] = wiki_data_to_dict(en.wiki)
+        ks = set(dic.keys())
+        for k in ks.intersection({'created_by_id', 'created_at', 'updated_by_id', 'updated_at'}):
+            del dic[k]
         return dic
 
     def wiki_data_to_dict(wd):
