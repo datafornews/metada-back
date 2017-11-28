@@ -109,8 +109,6 @@ class EntityModelView(RoleSafeModelView):
         ('m', 'media'),
         ('o', 'other')
     ]
-    # column_searchable_list = ['name', 'wiki.title', 'id']
-    column_searchable_list = ['name', 'id', 'updated_at', 'created_at']
 
     superuser_column_list = ['name', 'website', 'wiki_link', 'long_name',
                              'other_groups', 'category',
@@ -121,7 +119,9 @@ class EntityModelView(RoleSafeModelView):
     superuser_form_columns = superuser_column_list[:-1]
     moderator_form_columns = moderator_column_list[:-1]
 
-    column_sortable_list = ['name', 'id']
+    # column_searchable_list = ['name', 'wiki.title', 'id']
+    column_searchable_list = ['name', 'id', 'updated_at', 'created_at']
+    column_sortable_list = ['name', 'id', 'updated_at', 'created_at']
     column_editable_list = ['name', 'website', 'wiki_link',
                             'other_groups', 'long_name']
 
@@ -198,15 +198,14 @@ class UserModelView(SafeModelView):
 
 
 class EdgeModelView(RoleSafeModelView):
-    column_searchable_list = ['child.name', 'parent.name', 'value']
-
     superuser_column_list = ['parent', 'child', 'value', 'special',
                              'updated_by', 'updated_at', 'created_by', 'created_at']
+    moderator_column_list = ['parent', 'child', 'value', 'special']
     superuser_form_columns = superuser_column_list
-
-    moderator_column_list = ['parent', 'child', 'value', 'special',]
     moderator_form_columns = moderator_column_list
 
+    column_searchable_list = ['child.name', 'parent.name', 'value']
+    
     def on_model_change(self, form, edge, is_created):
         now = datetime.datetime.now()
         if is_created:
