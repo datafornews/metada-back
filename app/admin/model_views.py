@@ -47,6 +47,7 @@ class SafeModelView(ModelView):
             return False
 
         if current_user.has_role('moderator'):
+            self.can_delete = current_user.has_role('superuser')
             return True
 
         return False
@@ -112,18 +113,20 @@ class EntityModelView(RoleSafeModelView):
 
     superuser_column_list = ['name', 'website', 'wiki_link', 'long_name',
                              'other_groups', 'category',
-                             'updated_by', 'updated_at', 'created_by', 'created_at', 'id' # 'wiki',
+                             'updated_by', 'updated_at', 'created_by', 'created_at', 'blacklist', 'id'  # 'wiki',
                              ]
     moderator_column_list = ['name', 'website', 'wiki_link', 'long_name',
-                             'other_groups', 'category', 'id']
+                             'other_groups', 'category', 'blacklist', 'id']
     superuser_form_columns = superuser_column_list[:-1]
     moderator_form_columns = moderator_column_list[:-1]
 
     # column_searchable_list = ['name', 'wiki.title', 'id']
-    column_searchable_list = ['name', 'id', 'updated_at', 'created_at']
-    column_sortable_list = ['name', 'id', 'updated_at', 'created_at']
+    column_searchable_list = ['name', 'id',
+                              'updated_at', 'created_at', 'blacklist']
+    column_sortable_list = ['name', 'id',
+                            'updated_at', 'created_at', 'blacklist']
     column_editable_list = ['name', 'website', 'wiki_link',
-                            'other_groups', 'long_name']
+                            'other_groups', 'long_name', 'blacklist']
 
     form_overrides = dict(category=SelectForChoiceTypeField)
     form_args = {
@@ -199,13 +202,17 @@ class UserModelView(SafeModelView):
 
 class EdgeModelView(RoleSafeModelView):
     superuser_column_list = ['parent', 'child', 'value', 'special',
-                             'updated_by', 'updated_at', 'created_by', 'created_at']
+                             'updated_by', 'updated_at', 'created_by', 'created_at', 'blacklist']
     moderator_column_list = ['parent', 'child', 'value', 'special']
     superuser_form_columns = superuser_column_list
     moderator_form_columns = moderator_column_list
 
-    column_searchable_list = ['child.name', 'parent.name', 'value']
-    
+    column_sortable_list = ['value', 'special',
+                            'created_at', 'updated_at', 'blacklist']
+
+    column_searchable_list = ['child.name',
+                              'parent.name', 'value', 'blacklist']
+
     def on_model_change(self, form, edge, is_created):
         now = datetime.datetime.now()
         if is_created:

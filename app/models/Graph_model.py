@@ -29,6 +29,7 @@ class Entity(db.Model):
     updated_at = db.Column(db.DateTime())
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    blacklist = db.Column(db.Boolean(), default=False)
 
     def __init__(self, name=None, website=None, wiki=None, wiki_page_id=None, category=None, long_name=None, other_groups=None):
         self.name = name
@@ -48,18 +49,6 @@ class Entity(db.Model):
     def get_children(self):
         return [x.child for x in self.higher_edges]
 
-
-class WikiData(db.Model):
-    __tablename__ = 'wikidatas'
-
-    id = db.Column(db.Integer, primary_key=True)
-    entity_id = db.Column(db.Integer, ForeignKey('entities.id'))
-    # entity = relationship(Entity, primaryjoin= entity_id == Entity.id, backref='entities')
-    title = db.Column(db.String())
-    lang = db.Column(db.String())
-
-    def __repr__(self):
-        return '<WD: id {} title {}>'.format(self.id, self.title)
 
 class Edge(db.Model):
     __tablename__ = 'edges'
@@ -85,13 +74,13 @@ class Edge(db.Model):
         backref='children')
 
     value = db.Column(db.Integer)
-
     special = db.Column(db.String())
 
     created_at = db.Column(db.DateTime())
     updated_at = db.Column(db.DateTime())
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    blacklist = db.Column(db.Boolean(), default=False)
 
     def __init__(self, parent=None, child=None, value=None, special=None):
         self.child = child
@@ -113,3 +102,16 @@ class DBMetaData(db.Model):
 
     def __repr__(self):
         return '<DBMetaData version:{}>'.format(self.version)
+
+
+class WikiData(db.Model):
+    __tablename__ = 'wikidatas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    entity_id = db.Column(db.Integer, ForeignKey('entities.id'))
+    # entity = relationship(Entity, primaryjoin= entity_id == Entity.id, backref='entities')
+    title = db.Column(db.String())
+    lang = db.Column(db.String())
+
+    def __repr__(self):
+        return '<WD: id {} title {}>'.format(self.id, self.title)
