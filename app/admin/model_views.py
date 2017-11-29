@@ -212,6 +212,7 @@ class EdgeModelView(RoleSafeModelView):
 
     column_searchable_list = ['child.name',
                               'parent.name', 'value', 'blacklist']
+    column_editable_list = ['value', 'special', 'blacklist']
 
     def on_model_change(self, form, edge, is_created):
         now = datetime.datetime.now()
