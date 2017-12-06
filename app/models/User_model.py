@@ -50,6 +50,7 @@ class User(db.Model, UserMixin):
                                 lazy='dynamic', primaryjoin='User.id==Edge.created_by_id')
     edges_updated = db.relationship('Edge', backref='updated_by',
                                 lazy='dynamic', primaryjoin='User.id==Edge.updated_by_id')
+    verified_email = db.relationship("VerifiedEmail", uselist=False, backref="user")
 
     def set_password(self, password):
         self.password = hash_password(password)
@@ -144,3 +145,10 @@ class BlacklistToken(db.Model):
             return True
         else:
             return False
+
+
+class VerifiedEmail(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    link = db.Column(db.String(36), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, ForeignKey('user.id'))
