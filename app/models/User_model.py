@@ -36,6 +36,7 @@ class User(db.Model, UserMixin):
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
+    username = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
@@ -43,14 +44,15 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
                             backref=db.backref('users', lazy='dynamic'))
     entities_created = db.relationship('Entity', backref='created_by',
-                                lazy='dynamic', primaryjoin='User.id==Entity.created_by_id')
+                                       lazy='dynamic', primaryjoin='User.id==Entity.created_by_id')
     entities_updated = db.relationship('Entity', backref='updated_by',
-                                lazy='dynamic', primaryjoin='User.id==Entity.updated_by_id')
+                                       lazy='dynamic', primaryjoin='User.id==Entity.updated_by_id')
     edges_created = db.relationship('Edge', backref='created_by',
-                                lazy='dynamic', primaryjoin='User.id==Edge.created_by_id')
+                                    lazy='dynamic', primaryjoin='User.id==Edge.created_by_id')
     edges_updated = db.relationship('Edge', backref='updated_by',
-                                lazy='dynamic', primaryjoin='User.id==Edge.updated_by_id')
-    verified_email = db.relationship("VerifiedEmail", uselist=False, backref="user")
+                                    lazy='dynamic', primaryjoin='User.id==Edge.updated_by_id')
+    verified_email = db.relationship(
+        "VerifiedEmail", uselist=False, backref="user")
 
     def set_password(self, password):
         self.password = hash_password(password)
@@ -151,4 +153,13 @@ class VerifiedEmail(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     link = db.Column(db.String(36), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime())
+
+    def __init__(self, link=None, user_id=None, created_at=None):
+        self.created_at = created_at
+        self.link = link
+        self.user_id = user_id
+
+    def __repr__(self):
+        return '<' + self.link[:5] + '... for ' + self.user.email + '>'

@@ -1,8 +1,9 @@
 from app import app
-from app import imageNetUsernames
 from app.models.Graph_model import *
-from flask import render_template, jsonify, abort
+from app.models.User_model import *
+from flask import render_template, jsonify, abort, request, Response
 import datetime
+import random
 
 
 def clear_instance(model_instance):
@@ -58,9 +59,32 @@ def get_db_meta_data():
     return jsonify(metadata)
 
 
-@app.route('/<name>')
-def hello_name(name):
-    return "Hello {}!".format(name)
+@app.route('/random_username')
+def get_random_username():
+    from app import imageNetUsernames
+    rd_un = random.sample(imageNetUsernames, 1)[0]
+
+    while User.query.filter(User.username == rd_un).all():
+        rd_un = random.sample(imageNetUsernames, 1)[0]
+
+    return jsonify({
+        'username': rd_un
+    })
+
+
+@app.route('/verify/<link>')
+def verify_account(link):
+    vf = VerifiedEmail.query.filter(VerifiedEmail.link == link).first()
+    now = datetime.datetime.now()
+    if vf and now - vf.created_at < datetime.timedelta(days=100):
+        vf.user.confirmed_at = now
+        vf.user.active = True
+        db.object_session(vf).delete(vf)
+        db.object_session(vf).commit()
+        return jsonify({
+            'verified': True
+        })
+    return abort(404)
 
 
 @app.route('/data/')
@@ -93,3 +117,9 @@ def get_update(timestamp):
     except (ValueError, TypeError) as e:
         print(e)
         abort(404)
+
+
+@app.route('/<name>')
+def hello_name(name):
+    abort(Response(
+        "Welcome at {}! <br/> Unfortunately there is nothing here :( (yet!)".format(name)))

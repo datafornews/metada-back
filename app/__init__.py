@@ -1,4 +1,5 @@
 import os
+import pickle as pkl
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, url_for, redirect, request, abort
@@ -56,5 +57,5 @@ def security_context_processor():
 from app.auth.views import auth_blueprint
 app.register_blueprint(auth_blueprint)
 
-with open('./ImagenetUsernames.pkl', 'rb') as f:
-    imageNetUsernames = pkl.load()
+with open(os.path.dirname(os.path.realpath(__file__)) + '/ImagenetUsernames.pkl', 'rb') as f:
+    imageNetUsernames = pkl.load(f)
