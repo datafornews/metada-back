@@ -75,7 +75,7 @@ def get_random_username():
 @app.route('/verify/<link>')
 def verify_account(link):
     vf = VerifiedEmail.query.filter(VerifiedEmail.link == link).first()
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     if vf and now - vf.created_at < datetime.timedelta(days=100):
         vf.user.confirmed_at = now
         vf.user.active = True
@@ -122,4 +122,5 @@ def get_update(timestamp):
 @app.route('/<name>')
 def hello_name(name):
     abort(Response(
-        "Welcome at {}! <br/> Unfortunately there is nothing here :( (yet!)".format(name)))
+        "Welcome at {}! <br/> Unfortunately there is nothing here :( (yet!)"
+        .format(name)))
