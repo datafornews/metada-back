@@ -65,6 +65,7 @@ class User(db.Model, UserMixin):
                  active=None,
                  confirmed_at=None,
                  registered_on=None,
+                 username=None,
                  roles=['user']
                  ):
         self.email = email
@@ -73,6 +74,7 @@ class User(db.Model, UserMixin):
         self.first_name = first_name
         self.last_name = last_name
         self.active = active
+        self.username = username
         self.roles = [r for r in Role.query.all() if r.name in roles]
 
     def __str__(self):
@@ -90,7 +92,7 @@ class User(db.Model, UserMixin):
         """
         try:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }
