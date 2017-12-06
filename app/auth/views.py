@@ -1,10 +1,14 @@
 from flask import Blueprint, request, make_response, jsonify
 from flask.views import MethodView
+import datetime
 
 from app import bcrypt, db
 from app.models.User_model import User, BlacklistToken
+import app.forms.Validation as Val
+from flask_cors import CORS
 
 auth_blueprint = Blueprint('auth', __name__)
+CORS(auth_blueprint, resources=r'/auth/*')
 
 
 class RegisterAPI(MethodView):
@@ -14,41 +18,50 @@ class RegisterAPI(MethodView):
 
     def post(self):
         # get the post data
-        post_data = request.get_json()
-        # check if user already exists
-        user = User.query.filter_by(email=post_data.get('email')).first()
-        if not user:
-            try:
-                user = User(
-                    email=post_data.get('email'),
-                    password=post_data.get('password'),
-                    first_name=post_data.get('first_name'),
-                    last_name=post_data.get('last_name')
-                )
+        responseObject = {
+            'status': 'fail',
+            'message': 'Some error occurred. Please try again.'
+        }
 
-                # insert the user
-                db.session.add(user)
-                db.session.commit()
-                # generate the auth token
-                auth_token = user.encode_auth_token(user.id)
-                responseObject = {
-                    'status': 'success',
-                    'message': 'Successfully registered.',
-                    'auth_token': auth_token.decode()
-                }
-                return make_response(jsonify(responseObject)), 201
-            except Exception as e:
+        post_data = Val.register_user(request.get_json())
+        if post_data:
+            # check if user already exists
+            user = User.query.filter_by(
+                email=post_data.get('email')).first()
+
+            if not user:
+                try:
+                    user = User(username=post_data.get('username'),
+                                first_name=post_data.get('firstName'),
+                                last_name=post_data.get('lastName'),
+                                email=post_data.get('email'),
+                                password=post_data.get('password'),
+                                active=True)
+                    user.registered_on = datetime.datetime.utcnow()
+                    db.session.add(user)
+                    db.session.commit()
+
+                    # insert the user
+                    db.session.add(user)
+                    db.session.commit()
+                    # generate the auth token
+                    auth_token = user.encode_auth_token(user.id)
+                    responseObject = {
+                        'status': 'success',
+                        'message': 'Successfully registered.',
+                        'auth_token': auth_token.decode()
+                    }
+                    return make_response(jsonify(responseObject)), 201
+                except Exception as e:
+                    return make_response(jsonify(responseObject)), 401
+            else:
                 responseObject = {
                     'status': 'fail',
-                    'message': 'Some error occurred. Please try again.'
+                    'message': 'User already exists. Please Log in.',
                 }
-                return make_response(jsonify(responseObject)), 401
         else:
-            responseObject = {
-                'status': 'fail',
-                'message': 'User already exists. Please Log in.',
-            }
-            return make_response(jsonify(responseObject)), 202
+            responseObject['message'] = 'Invalid Form'
+        return make_response(jsonify(responseObject)), 202
 
 
 class LoginAPI(MethodView):
