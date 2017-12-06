@@ -10,6 +10,8 @@ cffi==1.11.2
 chardet==3.0.4
 click==6.7
 decorator==4.1.2
+dnspython==1.15.0
+email-validator==1.0.3
 Flask==0.12.2
 Flask-Admin==1.5.0
 Flask-BabelEx==0.9.3
@@ -39,6 +41,7 @@ mccabe==0.6.1
 orderedmultidict==0.7.11
 parso==0.1.0
 passlib==1.7.1
+pep8==1.7.1
 pexpect==4.2.1
 pickleshare==0.7.4
 prompt-toolkit==1.0.15
@@ -50,8 +53,10 @@ PyJWT==1.5.3
 pylint==1.7.4
 python-dateutil==2.6.1
 python-editor==1.0.3
+python-http-client==3.0.0
 pytz==2017.3
 requests==2.18.4
+sendgrid==5.3.0
 simplegeneric==0.8.1
 six==1.11.0
 speaklater==1.3
