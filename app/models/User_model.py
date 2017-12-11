@@ -115,13 +115,13 @@ class User(db.Model, UserMixin):
             payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
-                return 'blacklisted'
+                return 'blacklistedToken'
             else:
                 return payload['sub']
         except jwt.ExpiredSignatureError:
-            return 'expired'
+            return 'expiredToken'
         except jwt.InvalidTokenError:
-            return 'invalid'
+            return 'invalidToken'
 
 
 class BlacklistToken(db.Model):
