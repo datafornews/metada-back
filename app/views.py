@@ -1,46 +1,11 @@
+import random
+import datetime
 from app import app
 from app.models.Graph_model import *
 from app.models.User_model import *
-from flask import render_template, jsonify, abort, request, Response
-import datetime
-import random
-
-
-def clear_instance(model_instance):
-    dic = model_instance.__dict__.copy()
-    keys_to_delete = {
-        '_sa_instance_state',
-        'created_by_id',
-        'created_at',
-        'updated_by_id',
-        'updated_at'
-    }
-    ks = set(dic.keys())
-    for k in ks.intersection(keys_to_delete):
-        del dic[k]
-    return dic
-
-
-def entity_to_dict(en):
-    dic = clear_instance(en)
-    dic['category'] = dic['category'].code
-    if dic['website']:
-        dic['website'] = dic['website']
-    if en.wiki:
-        dic['wiki'] = wiki_data_to_dict(en.wiki)
-
-    return dic
-
-
-def wiki_data_to_dict(wd):
-    return {
-        'lang': wd.lang,
-        'title': wd.title
-    }
-
-
-def edge_to_dict(ed):
-    return clear_instance(ed)
+from app.utils.jwt import get_jwt_user
+from app.utils.models_to_dict import user_to_dict, entity_to_dict, edge_to_dict
+from flask import jsonify, abort, request, Response, make_response
 
 
 @app.route('/')
@@ -90,12 +55,14 @@ def verify_account(link):
 @app.route('/data/')
 def get_full_data():
 
-    ents = Entity.query.all()
-    edges = Edge.query.all()
+    ents = Entity.query.filter_by(
+        blacklist=False).filter_by(candidate=False).all()
+    edges = Edge.query.filter_by(
+        blacklist=False).filter_by(candidate=False).all()
 
     return jsonify({
-        'entities': [entity_to_dict(e) for e in ents if not e.blacklist],
-        'shares': [edge_to_dict(e) for e in edges if not e.blacklist]
+        'entities': [entity_to_dict(e) for e in ents],
+        'shares': [edge_to_dict(e) for e in edges]
     })
 
 
@@ -117,6 +84,32 @@ def get_update(timestamp):
     except (ValueError, TypeError) as e:
         print(e)
         abort(404)
+
+
+@app.route('/user_exists/<username>')
+def user_exists(username):
+    return jsonify({
+        'exists': User.query.filter_by(username=username).first() is not None
+    })
+
+
+@app.route('/email_exists/<email>')
+def email_exists(email):
+    return jsonify({
+        'exists': User.query.filter_by(email=email).first() is not None
+    })
+
+
+@app.route('/a/<b>')
+def a(b):
+    result = get_jwt_user(request)
+    if not result['allow']:
+        return make_response(jsonify(result['response'])), 401
+
+    user = result['response']
+    if not user:
+        return make_response(jsonify({'status': 'fail', 'message': 'noUser'})), 401
+    return make_response(jsonify({'user': user_to_dict(user), 'b': b})), 200
 
 
 @app.route('/<name>')

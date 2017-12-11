@@ -16,23 +16,23 @@ def check_email(email):
 
 def register_user(data):
     try:
-        print(data)
         valid = 1
         data = json.loads(json.dumps(data))
-        email = check_email(data["email"])
-        print(email)
+        email = check_email(data.get("email"))
         valid *= len(email) > 0
-        valid *= len(data['username']) > 3 and len(data['username']) < 25
-        valid *= len(data['firstName']) > 1 and len(data['firstName']) < 25
-        valid *= len(data['lastName']) > 1 and len(data['lastName']) < 25
-        valid *= len(data['password']) > 6
-        valid *= data['password'] == data['confirmPassword']
-        print(valid)
+        valid *= len(data.get('username', '')
+                     ) > 3 and len(data.get('username', '')) < 25
+        valid *= len(data.get('first_name', '')) < 25
+        valid *= len(data.get('last_name', '')) < 35
+        valid *= len(data.get('password', '')) > 5
+        valid *= data.get('password', '') == data.get('confirmPassword', 'x')
         if valid:
             print('Valid')
             data['email'] = email
             return data
         else:
+            print('Not Valid')
             return None
     except Exception as e:
+        print('Error', e)
         return None

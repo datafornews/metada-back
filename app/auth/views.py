@@ -1,14 +1,35 @@
 from flask import Blueprint, request, make_response, jsonify
 from flask.views import MethodView
 import datetime
+import uuid
+from flask_security.utils import verify_password
 
 from app import bcrypt, db
-from app.models.User_model import User, BlacklistToken
+from app.models.User_model import User, BlacklistToken, VerifiedEmail
 import app.forms.Validation as Val
+from app.utils.mail import send_register_email
+from app.utils.jwt import get_jwt_user
+from app.utils.models_to_dict import user_to_dict
 from flask_cors import CORS
 
 auth_blueprint = Blueprint('auth', __name__)
 CORS(auth_blueprint, resources=r'/auth/*')
+
+fail_responses = {
+    'user_exists': {
+        'status': 'fail',
+        'message': 'userExists',
+    },
+    'invalid_form': {
+        'status': 'fail',
+        'message': 'invalidForm',
+    },
+    'error': {
+        'status': 'fail',
+        'message': 'error'
+    }
+
+}
 
 
 class RegisterAPI(MethodView):
@@ -18,11 +39,7 @@ class RegisterAPI(MethodView):
 
     def post(self):
         # get the post data
-        responseObject = {
-            'status': 'fail',
-            'message': 'Some error occurred. Please try again.'
-        }
-
+        responseObject = fail_responses['error']
         post_data = Val.register_user(request.get_json())
         if post_data:
             # check if user already exists
@@ -38,30 +55,60 @@ class RegisterAPI(MethodView):
                                 password=post_data.get('password'),
                                 active=True)
                     user.registered_on = datetime.datetime.utcnow()
-                    db.session.add(user)
-                    db.session.commit()
+                    vf = VerifiedEmail()
+                    vf.created_at = user.registered_on
+                    vf.user = user
+                    vf.link = str(uuid.uuid4())
 
-                    # insert the user
+                    email_response = send_register_email(user)
+
                     db.session.add(user)
                     db.session.commit()
                     # generate the auth token
                     auth_token = user.encode_auth_token(user.id)
                     responseObject = {
                         'status': 'success',
-                        'message': 'Successfully registered.',
-                        'auth_token': auth_token.decode()
+                        'message': 'registered',
+                        'auth_token': auth_token.decode(),
+                        'user': user_to_dict(user)
                     }
+                    print('User {} added'.format(user.username))
                     return make_response(jsonify(responseObject)), 201
                 except Exception as e:
-                    return make_response(jsonify(responseObject)), 401
+                    print('ERROR', e)
+                    responseObject = fail_responses['error']
             else:
-                responseObject = {
-                    'status': 'fail',
-                    'message': 'User already exists. Please Log in.',
-                }
+                responseObject = fail_responses['user_exists']
         else:
-            responseObject['message'] = 'Invalid Form'
-        return make_response(jsonify(responseObject)), 202
+            responseObject = fail_responses['invalid_form']
+
+        return make_response(jsonify(responseObject)), 401
+
+
+class ResendEmailAPI(MethodView):
+
+    def post(self):
+        post_data = request.get_json()
+        result = get_jwt_user(request)
+        if not result['allow']:
+            return make_response(jsonify(result['response'])), 401
+
+        user = result['response']
+        if not user:
+            return make_response(
+                jsonify({'status': 'fail', 'message': 'noUser'})), 401
+
+        now = datetime.datetime.utcnow()
+        if now - user.verified_email.created_at > datetime.timedelta(
+                hours=1):
+            email_response = send_register_email(user)
+            user.verified_email.created_at = now
+            db.object_session(user).commit()
+            print('email resent')
+            return make_response(jsonify({'resent': True})), 200
+        else:
+            print('email not sent')
+            return make_response(jsonify({'resent': False})), 200
 
 
 class LoginAPI(MethodView):
@@ -77,15 +124,15 @@ class LoginAPI(MethodView):
             user = User.query.filter_by(
                 email=post_data.get('email')
             ).first()
-            if user and bcrypt.check_password_hash(
-                user.password, post_data.get('password')
-            ):
+            if user and verify_password(
+                    post_data.get('password'), user.password):
                 auth_token = user.encode_auth_token(user.id)
                 if auth_token:
                     responseObject = {
                         'status': 'success',
                         'message': 'Successfully logged in.',
-                        'auth_token': auth_token.decode()
+                        'auth_token': auth_token.decode(),
+                        'user': user_to_dict(user)
                     }
                     return make_response(jsonify(responseObject)), 200
             else:
@@ -108,45 +155,29 @@ class UserAPI(MethodView):
     User Resource
     """
 
-    def get(self):
-        # get the auth token
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            try:
-                auth_token = auth_header.split(" ")[1]
-            except IndexError:
-                responseObject = {
-                    'status': 'fail',
-                    'message': 'Bearer token malformed.'
-                }
-                return make_response(jsonify(responseObject)), 401
+    def post(self):
+        result = get_jwt_user(request)
+        print(result)
+        if not result['allow']:
+            return make_response(jsonify(result['response'])), 401
+
+        user = result['response']
+        if not user:
+            return make_response(
+                jsonify({'status': 'fail', 'message': 'noUser'})), 401
         else:
-            auth_token = ''
-        if auth_token:
-            resp = User.decode_auth_token(auth_token)
-            if not isinstance(resp, str):
-                user = User.query.filter_by(id=resp).first()
-                responseObject = {
+            auth_header = request.headers.get('Authorization')
+            auth_token = auth_header.split(" ")[1]
+            blacklist_token = BlacklistToken(token=auth_token)
+            db.session.add(blacklist_token)
+            db.session.commit()
+            auth_token = user.encode_auth_token(user.id)
+            return make_response(
+                jsonify({
                     'status': 'success',
-                    'data': {
-                        'user_id': user.id,
-                        'email': user.email,
-                        'admin': user.admin,
-                        'registered_on': user.registered_on
-                    }
-                }
-                return make_response(jsonify(responseObject)), 200
-            responseObject = {
-                'status': 'fail',
-                'message': resp
-            }
-            return make_response(jsonify(responseObject)), 401
-        else:
-            responseObject = {
-                'status': 'fail',
-                'message': 'Provide a valid auth token.'
-            }
-            return make_response(jsonify(responseObject)), 401
+                    'userData': user_to_dict(user),
+                    'auth_token': auth_token.decode()
+                })), 200
 
 
 class LogoutAPI(MethodView):
@@ -156,43 +187,46 @@ class LogoutAPI(MethodView):
 
     def post(self):
         # get auth token
+        result = get_jwt_user(request)
+        if not result['allow']:
+            return make_response(jsonify(result['response'])), 401
+
+        user = result['response']
+        if not user:
+            return make_response(
+                jsonify({'status': 'fail', 'message': 'noUser'})), 401
+
         auth_header = request.headers.get('Authorization')
-        if auth_header:
-            auth_token = auth_header.split(" ")[1]
-        else:
-            auth_token = ''
-        if auth_token:
-            resp = User.decode_auth_token(auth_token)
-            if not isinstance(resp, str):
-                # mark the token as blacklisted
-                blacklist_token = BlacklistToken(token=auth_token)
-                try:
-                    # insert the token
-                    db.session.add(blacklist_token)
-                    db.session.commit()
-                    responseObject = {
-                        'status': 'success',
-                        'message': 'Successfully logged out.'
-                    }
-                    return make_response(jsonify(responseObject)), 200
-                except Exception as e:
-                    responseObject = {
-                        'status': 'fail',
-                        'message': e
-                    }
-                    return make_response(jsonify(responseObject)), 200
-            else:
+        auth_token = auth_header.split(" ")[1]
+
+        resp = User.decode_auth_token(auth_token)
+        if not isinstance(resp, str):
+            # mark the token as blacklisted
+            blacklist_token = BlacklistToken(token=auth_token)
+            try:
+                # insert the token
+                db.session.add(blacklist_token)
+                db.session.commit()
+                responseObject = {
+                    'status': 'success',
+                    'message': 'Successfully logged out.'
+                }
+                print(user, '-> Logged Out')
+                return make_response(jsonify(responseObject)), 200
+            except Exception as e:
                 responseObject = {
                     'status': 'fail',
-                    'message': resp
+                    'message': e
                 }
-                return make_response(jsonify(responseObject)), 401
+                return make_response(jsonify(responseObject)), 200
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': resp
             }
-            return make_response(jsonify(responseObject)), 403
+            return make_response(jsonify(responseObject)), 401
+
+        return make_response(jsonify(responseObject)), 403
 
 
 # define the API resources
@@ -200,6 +234,7 @@ registration_view = RegisterAPI.as_view('register_api')
 login_view = LoginAPI.as_view('login_api')
 user_view = UserAPI.as_view('user_api')
 logout_view = LogoutAPI.as_view('logout_api')
+resend_view = ResendEmailAPI.as_view('resend_email_api')
 
 # add Rules for API Endpoints
 auth_blueprint.add_url_rule(
@@ -215,10 +250,16 @@ auth_blueprint.add_url_rule(
 auth_blueprint.add_url_rule(
     '/auth/status',
     view_func=user_view,
-    methods=['GET']
+    methods=['POST']
 )
 auth_blueprint.add_url_rule(
     '/auth/logout',
     view_func=logout_view,
+    methods=['POST']
+)
+
+auth_blueprint.add_url_rule(
+    '/auth/resend_email',
+    view_func=resend_view,
     methods=['POST']
 )

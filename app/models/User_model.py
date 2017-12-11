@@ -92,7 +92,7 @@ class User(db.Model, UserMixin):
         """
         try:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=5),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=1),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }
@@ -115,13 +115,13 @@ class User(db.Model, UserMixin):
             payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
-                return 'Token blacklisted. Please log in again.'
+                return 'blacklisted'
             else:
                 return payload['sub']
         except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again.'
+            return 'expired'
         except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
+            return 'invalid'
 
 
 class BlacklistToken(db.Model):

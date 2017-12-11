@@ -30,6 +30,7 @@ class Entity(db.Model):
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     blacklist = db.Column(db.Boolean(), default=False)
+    candidate = db.Column(db.Boolean(), default=False)
 
     def __init__(self, name=None, website=None, wiki=None, wiki_page_id=None, category=None, long_name=None, other_groups=None):
         self.name = name
@@ -81,6 +82,7 @@ class Edge(db.Model):
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     blacklist = db.Column(db.Boolean(), default=False)
+    candidate = db.Column(db.Boolean(), default=False)
 
     def __init__(self, parent=None, child=None, value=None, special=None):
         self.child = child
@@ -109,7 +111,6 @@ class WikiData(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     entity_id = db.Column(db.Integer, ForeignKey('entities.id'))
-    # entity = relationship(Entity, primaryjoin= entity_id == Entity.id, backref='entities')
     title = db.Column(db.String())
     lang = db.Column(db.String())
 
