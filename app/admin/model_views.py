@@ -164,7 +164,7 @@ class UserModelView(SafeModelView):
     column_searchable_list = ['email', 'first_name', 'last_name']
 
     column_list = ['first_name', 'last_name', 'email', 'roles',
-                   'active', 'confirmed_at', 'registered_on', 'password']
+                   'active', 'confirmed_at', 'registered_on', 'uuid']
 
     form_excluded_columns = ('password')
     #  Form will now use all the other fields in the model
@@ -225,6 +225,38 @@ class EdgeModelView(RoleSafeModelView):
 
 class DBMetadataModelView(SafeModelView):
     column_searchable_list = ['description', 'version', 'version_string']
+
+    def is_accessible(self):
+        if not current_user.is_active or not current_user.is_authenticated:
+            return False
+
+        if current_user.has_role('superuser'):
+            return True
+
+        return False
+
+
+class BlacklistTokenModelView(SafeModelView):
+    fields = ['id', 'blacklisted_on', 'token']
+    column_list = fields
+    column_searchable_list = fields
+    column_sortable_list = ['id', 'blacklisted_on']
+
+    def is_accessible(self):
+        if not current_user.is_active or not current_user.is_authenticated:
+            return False
+
+        if current_user.has_role('superuser'):
+            return True
+
+        return False
+
+
+class VerifiedEmailModelView(SafeModelView):
+    fields = ['id', 'user', 'created_at', 'link']
+    column_list = fields
+    column_searchable_list = ['user.username', 'user.email', 'created_at']
+    column_sortable_list = ['id', 'created_at']
 
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
