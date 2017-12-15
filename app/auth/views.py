@@ -16,9 +16,13 @@ auth_blueprint = Blueprint('auth', __name__)
 CORS(auth_blueprint, resources=r'/auth/*')
 
 fail_responses = {
-    'user_exists': {
+    'username_exists': {
         'status': 'fail',
-        'message': 'userExists',
+        'message': 'usernameExists',
+    },
+    'email_exists': {
+        'status': 'fail',
+        'message': 'emailExists',
     },
     'invalid_form': {
         'status': 'fail',
@@ -43,42 +47,47 @@ class RegisterAPI(MethodView):
         post_data = Val.register_user(request.get_json())
         if post_data:
             # check if user already exists
-            user = User.query.filter_by(
+            user_mail = User.query.filter_by(
                 email=post_data.get('email')).first()
+            user_username = User.query.filter_by(
+                username=post_data.get('username')).first()
 
-            if not user:
-                try:
-                    user = User(username=post_data.get('username'),
-                                first_name=post_data.get('firstName'),
-                                last_name=post_data.get('lastName'),
-                                email=post_data.get('email'),
-                                password=post_data.get('password'),
-                                active=True)
-                    user.registered_on = datetime.datetime.utcnow()
-                    vf = VerifiedEmail()
-                    vf.created_at = user.registered_on
-                    vf.user = user
-                    vf.link = str(uuid.uuid4())
+            if not user_mail:
+                if not user_username:
+                    try:
+                        user = User(username=post_data.get('username'),
+                                    first_name=post_data.get('firstName'),
+                                    last_name=post_data.get('lastName'),
+                                    email=post_data.get('email'),
+                                    password=post_data.get('password'),
+                                    active=True)
+                        user.registered_on = datetime.datetime.utcnow()
+                        vf = VerifiedEmail()
+                        vf.created_at = user.registered_on
+                        vf.user = user
+                        vf.link = str(uuid.uuid4())
 
-                    email_response = send_register_email(user)
+                        email_response = send_register_email(user)
 
-                    db.session.add(user)
-                    db.session.commit()
-                    # generate the auth token
-                    auth_token = user.encode_auth_token(user.id)
-                    responseObject = {
-                        'status': 'success',
-                        'message': 'registered',
-                        'auth_token': auth_token.decode(),
-                        'user': user_to_dict(user)
-                    }
-                    print('User {} added'.format(user.username))
-                    return make_response(jsonify(responseObject)), 201
-                except Exception as e:
-                    print('ERROR', e)
-                    responseObject = fail_responses['error']
+                        db.session.add(user)
+                        db.session.commit()
+                        # generate the auth token
+                        auth_token = user.encode_auth_token(user.id)
+                        responseObject = {
+                            'status': 'success',
+                            'message': 'registered',
+                            'auth_token': auth_token.decode(),
+                            'user': user_to_dict(user)
+                        }
+                        print('User {} added'.format(user.username))
+                        return make_response(jsonify(responseObject)), 201
+                    except Exception as e:
+                        print('ERROR', e)
+                        responseObject = fail_responses['error']
+                else: 
+                    responseObject = fail_responses['username_exists']
             else:
-                responseObject = fail_responses['user_exists']
+                responseObject = fail_responses['email_exists']
         else:
             responseObject = fail_responses['invalid_form']
 
@@ -138,7 +147,7 @@ class LoginAPI(MethodView):
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': 'User does not exist.'
+                    'message': 'invalidUser'
                 }
                 return make_response(jsonify(responseObject)), 404
         except Exception as e:
