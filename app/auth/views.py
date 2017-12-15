@@ -1,4 +1,4 @@
-from flask import Blueprint, request, make_response, jsonify
+from flask import Blueprint, request, make_response, jsonify, abort
 from flask.views import MethodView
 import datetime
 import uuid
@@ -8,7 +8,7 @@ from app import bcrypt, db
 from app.models.User_model import User, BlacklistToken, VerifiedEmail
 import app.forms.Validation as Val
 from app.utils.mail import send_register_email
-from app.utils.jwt import get_jwt_user
+from app.utils.jwt import get_user
 from app.utils.models_to_dict import user_to_dict
 from flask_cors import CORS
 
@@ -72,7 +72,7 @@ class RegisterAPI(MethodView):
                         db.session.add(user)
                         db.session.commit()
                         # generate the auth token
-                        auth_token = user.encode_auth_token(user.id)
+                        auth_token = user.encode_auth_token(user.uuid)
                         responseObject = {
                             'status': 'success',
                             'message': 'registered',
@@ -84,7 +84,7 @@ class RegisterAPI(MethodView):
                     except Exception as e:
                         print('ERROR', e)
                         responseObject = fail_responses['error']
-                else: 
+                else:
                     responseObject = fail_responses['username_exists']
             else:
                 responseObject = fail_responses['email_exists']
@@ -98,11 +98,11 @@ class ResendEmailAPI(MethodView):
 
     def post(self):
         post_data = request.get_json()
-        result = get_jwt_user(request)
-        if not result['allow']:
-            return make_response(jsonify(result['response'])), 401
+        jwt_response = get_user(request)
+        if jwt_response['status'] != "success":
+            return make_response(jsonify(jwt_response)), 401
 
-        user = result['response']
+        user = jwt_response['message']
         if not user:
             return make_response(
                 jsonify({'status': 'fail', 'message': 'noUser'})), 401
@@ -135,7 +135,7 @@ class LoginAPI(MethodView):
             ).first()
             if user and verify_password(
                     post_data.get('password'), user.password):
-                auth_token = user.encode_auth_token(user.id)
+                auth_token = user.encode_auth_token(user.uuid)
                 if auth_token:
                     responseObject = {
                         'status': 'success',
@@ -165,12 +165,11 @@ class UserAPI(MethodView):
     """
 
     def post(self):
-        result = get_jwt_user(request)
-        print(result)
-        if not result['allow']:
-            return make_response(jsonify(result['response'])), 401
+        jwt_response = get_user(request)
+        if jwt_response['status'] != "success":
+            return make_response(jsonify(jwt_response)), 401
 
-        user = result['response']
+        user = jwt_response['message']
         if not user:
             return make_response(
                 jsonify({'status': 'fail', 'message': 'noUser'})), 401
@@ -180,7 +179,7 @@ class UserAPI(MethodView):
             blacklist_token = BlacklistToken(token=auth_token)
             db.session.add(blacklist_token)
             db.session.commit()
-            auth_token = user.encode_auth_token(user.id)
+            auth_token = user.encode_auth_token(user.uuid)
             return make_response(
                 jsonify({
                     'status': 'success',
@@ -196,11 +195,11 @@ class LogoutAPI(MethodView):
 
     def post(self):
         # get auth token
-        result = get_jwt_user(request)
-        if not result['allow']:
-            return make_response(jsonify(result['response'])), 401
+        jwt_response = get_user(request)
+        if jwt_response['status'] != "success":
+            return make_response(jsonify(jwt_response)), 401
 
-        user = result['response']
+        user = jwt_response['message']
         if not user:
             return make_response(
                 jsonify({'status': 'fail', 'message': 'noUser'})), 401
@@ -238,12 +237,32 @@ class LogoutAPI(MethodView):
         return make_response(jsonify(responseObject)), 403
 
 
+class Verify(MethodView):
+
+    def get(self):
+        # /auth/verify?link=
+        vf_validity = 2  # days
+        link = request.args.get('link')
+        vf = VerifiedEmail.query.filter(VerifiedEmail.link == link).first()
+        now = datetime.datetime.utcnow()
+        if vf and now - vf.created_at < datetime.timedelta(days=vf_validity):
+            vf.user.confirmed_at = now
+            vf.user.active = True
+            db.object_session(vf).delete(vf)
+            db.object_session(vf).commit()
+            return jsonify({
+                'verified': True
+            })
+        return abort(404)
+
+
 # define the API resources
 registration_view = RegisterAPI.as_view('register_api')
 login_view = LoginAPI.as_view('login_api')
 user_view = UserAPI.as_view('user_api')
 logout_view = LogoutAPI.as_view('logout_api')
 resend_view = ResendEmailAPI.as_view('resend_email_api')
+verify_view = Verify.as_view('verify_api')
 
 # add Rules for API Endpoints
 auth_blueprint.add_url_rule(
@@ -271,4 +290,10 @@ auth_blueprint.add_url_rule(
     '/auth/resend_email',
     view_func=resend_view,
     methods=['POST']
+)
+
+auth_blueprint.add_url_rule(
+    '/auth/verify',
+    view_func=verify_view,
+    methods=['GET']
 )

@@ -3,6 +3,7 @@
 import os
 import jwt
 import datetime
+import uuid
 
 from app import app, db, bcrypt
 from flask_security import UserMixin, RoleMixin
@@ -33,6 +34,7 @@ class User(db.Model, UserMixin):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(36), unique=True)
     first_name = db.Column(db.String(255))
     last_name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
@@ -76,6 +78,7 @@ class User(db.Model, UserMixin):
         self.active = active
         self.username = username
         self.roles = [r for r in Role.query.all() if r.name in roles]
+        self.uuid = uuid.uuid4().__str__()
 
     def __str__(self):
         return self.email
@@ -85,7 +88,7 @@ class User(db.Model, UserMixin):
             self.email, id(self)
         )
 
-    def encode_auth_token(self, user_id):
+    def encode_auth_token(self, user_uuid):
         """
         Generates the Auth Token
         :return: string
@@ -94,7 +97,7 @@ class User(db.Model, UserMixin):
             payload = {
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1, seconds=1),
                 'iat': datetime.datetime.utcnow(),
-                'sub': user_id
+                'sub': user_uuid
             }
             return jwt.encode(
                 payload,
@@ -111,17 +114,27 @@ class User(db.Model, UserMixin):
         :param auth_token:
         :return: integer|string
         """
+
+        response = {
+            "status": "fail"
+        }
+
         try:
             payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
-                return 'blacklistedToken'
+                response['message'] = 'blacklistedToken'
+                return response
             else:
-                return payload['sub']
+                response['status'] = "success"
+                response['message'] = payload['sub']
+                return response
         except jwt.ExpiredSignatureError:
-            return 'expiredToken'
+            response['message'] = 'expiredToken'
+            return response
         except jwt.InvalidTokenError:
-            return 'invalidToken'
+            response['message'] = 'invalidToken'
+            return response
 
 
 class BlacklistToken(db.Model):
@@ -134,7 +147,7 @@ class BlacklistToken(db.Model):
     token = db.Column(db.String(500), unique=True, nullable=False)
     blacklisted_on = db.Column(db.DateTime, nullable=False)
 
-    def __init__(self, token):
+    def __init__(self, token=None):
         self.token = token
         self.blacklisted_on = datetime.datetime.now()
 
