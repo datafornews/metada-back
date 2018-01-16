@@ -1,0 +1,6 @@
+metada_venv/*
+*.pkl
+*.pickle
+__pycache__
+*.pyc
+.python-version
