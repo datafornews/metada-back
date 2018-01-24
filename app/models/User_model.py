@@ -121,7 +121,7 @@ class User(db.Model, UserMixin):
             payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
-                response = jwt_fail_responses['blacklistedToken']
+                response = jwt_fail_responses['blacklisted']
                 return response
             else:
                 response = {
