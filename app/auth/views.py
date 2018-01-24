@@ -24,7 +24,6 @@ class RegisterAPI(MethodView):
 
     def post(self):
         # get the post data
-        response_object = fail_responses['server_error']
         post_data = Val.register_user(request.get_json())
         if post_data:
             # check if user already exists
@@ -63,8 +62,10 @@ class RegisterAPI(MethodView):
                         print('User {} added'.format(user.username))
                         return make_response(jsonify(response_object)), 201
                     except Exception as e:
-                        print('server_ERROR', e)
+                        print('server_error', e)
                         response_object = fail_responses['server_error']
+                        make_response(jsonify(response_object)), 500
+                        return 
                 else:
                     response_object = fail_responses['username_exists']
             else:
@@ -114,29 +115,32 @@ class LoginAPI(MethodView):
             user = User.query.filter_by(
                 email=post_data.get('email')
             ).first()
-            if user and verify_password(
+
+            if not user:
+                response_object = fail_responses['no_user_for_email']
+                return make_response(jsonify(response_object)), 401
+
+            if not verify_password(
                     post_data.get('password'), user.password):
-                auth_token = user.encode_auth_token(user.uuid)
-                if auth_token:
-                    response_object = {
-                        'status': 'success',
-                        'message': 'Successfully logged in.',
-                        'auth_token': auth_token.decode(),
-                        'user': user_to_dict(user)
-                    }
-                    return make_response(jsonify(response_object)), 200
-            else:
-                response_object = {
-                    'status': 'fail',
-                    'message': 'invalidUser'
-                }
-                return make_response(jsonify(response_object)), 404
+                response_object = fail_responses['wrong_password']
+                return make_response(jsonify(response_object)), 401
+
+            auth_token = user.encode_auth_token(user.uuid)
+            if not auth_token:
+                response_object = fail_responses['server_error']
+                return make_response(jsonify(response_object)), 500
+
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully logged in.',
+                'auth_token': auth_token.decode(),
+                'user': user_to_dict(user)
+            }
+            return make_response(jsonify(response_object)), 200
+
         except Exception as e:
             print(e)
-            response_object = {
-                'status': 'fail',
-                'message': 'Try again'
-            }
+            response_object = fail_responses['server_error']
             return make_response(jsonify(response_object)), 500
 
 
@@ -153,7 +157,7 @@ class UserAPI(MethodView):
         user = jwt_response['message']
         if not user:
             return make_response(
-                jsonify({'status': 'fail', 'message': 'noUser'})), 401
+                jsonify(fail_responses['no_user'])), 401
         else:
             auth_header = request.headers.get('Authorization')
             auth_token = auth_header.split(" ")[1]
@@ -167,6 +171,9 @@ class UserAPI(MethodView):
                     'userData': user_to_dict(user),
                     'auth_token': auth_token.decode()
                 })), 200
+
+        return make_response(
+                jsonify(fail_responses['server_error'])), 500
 
 
 class LogoutAPI(MethodView):
@@ -183,13 +190,13 @@ class LogoutAPI(MethodView):
         user = jwt_response['message']
         if not user:
             return make_response(
-                jsonify({'status': 'fail', 'message': 'noUser'})), 401
+                jsonify(fail_responses['no_user'])), 401
 
         auth_header = request.headers.get('Authorization')
         auth_token = auth_header.split(" ")[1]
 
         resp = User.decode_auth_token(auth_token)
-        if not isinstance(resp, str):
+        if resp['status'] == 'success':
             # mark the token as blacklisted
             blacklist_token = BlacklistToken(token=auth_token)
             try:
@@ -203,16 +210,10 @@ class LogoutAPI(MethodView):
                 print(user, '-> Logged Out')
                 return make_response(jsonify(response_object)), 200
             except Exception as e:
-                response_object = {
-                    'status': 'fail',
-                    'message': e
-                }
-                return make_response(jsonify(response_object)), 200
+                response_object = fail_responses['server_error']
+                return make_response(jsonify(response_object)), 500
         else:
-            response_object = {
-                'status': 'fail',
-                'message': resp
-            }
+            response_object = resp
             return make_response(jsonify(response_object)), 401
 
         return make_response(jsonify(response_object)), 403
@@ -226,14 +227,16 @@ class Verify(MethodView):
         link = request.args.get('link')
         vf = VerifiedEmail.query.filter(VerifiedEmail.link == link).first()
         now = datetime.datetime.utcnow()
-        if vf and now - vf.created_at < datetime.timedelta(days=vf_validity):
-            vf.user.confirmed_at = now
-            vf.user.active = True
-            db.object_session(vf).delete(vf)
-            db.object_session(vf).commit()
-            return jsonify({
-                'verified': True
-            })
+        if vf:
+            if now - vf.created_at < datetime.timedelta(days=vf_validity):
+                vf.user.confirmed_at = now
+                vf.user.active = True
+                db.object_session(vf).delete(vf)
+                db.object_session(vf).commit()
+                return jsonify({
+                    'verified': True
+                })
+            return make_response(jsonify({"error": "outdated link"})), 404 
         return abort(404)
 
 

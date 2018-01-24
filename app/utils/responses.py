@@ -1,7 +1,6 @@
 fail_list = ['email_exists',
              'invalid_email',
              'invalid_form',
-             'invalid_username',
              'no_user',
              'no_user_for_email',
              'request_too_recent',
