@@ -8,6 +8,8 @@ import uuid
 from app import app, db, bcrypt
 from flask_security import UserMixin, RoleMixin
 from flask_security.utils import hash_password
+from app.utils.responses import jwt_fail_responses
+
 
 roles_users = db.Table(
     'roles_users',
@@ -115,25 +117,23 @@ class User(db.Model, UserMixin):
         :return: integer|string
         """
 
-        response = {
-            "status": "fail"
-        }
-
         try:
             payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
-                response['message'] = 'blacklistedToken'
+                response = jwt_fail_responses['blacklistedToken']
                 return response
             else:
-                response['status'] = "success"
-                response['message'] = payload['sub']
+                response = {
+                    'status': "success",
+                    'message': payload['sub']
+                }
                 return response
         except jwt.ExpiredSignatureError:
-            response['message'] = 'expiredToken'
+            response = jwt_fail_responses['expired']
             return response
         except jwt.InvalidTokenError:
-            response['message'] = 'invalidToken'
+            response = jwt_fail_responses['invalid']
             return response
 
 

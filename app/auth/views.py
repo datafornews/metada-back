@@ -11,29 +11,10 @@ from app.utils.mail import send_register_email
 from app.utils.jwt import get_user
 from app.utils.models_to_dict import user_to_dict
 from flask_cors import CORS
+from app.utils.responses import fail_responses
 
 auth_blueprint = Blueprint('auth', __name__)
 CORS(auth_blueprint, resources=r'/auth/*')
-
-fail_responses = {
-    'username_exists': {
-        'status': 'fail',
-        'message': 'usernameExists',
-    },
-    'email_exists': {
-        'status': 'fail',
-        'message': 'emailExists',
-    },
-    'invalid_form': {
-        'status': 'fail',
-        'message': 'invalidForm',
-    },
-    'error': {
-        'status': 'fail',
-        'message': 'error'
-    }
-
-}
 
 
 class RegisterAPI(MethodView):
@@ -43,7 +24,7 @@ class RegisterAPI(MethodView):
 
     def post(self):
         # get the post data
-        responseObject = fail_responses['error']
+        response_object = fail_responses['server_error']
         post_data = Val.register_user(request.get_json())
         if post_data:
             # check if user already exists
@@ -73,25 +54,25 @@ class RegisterAPI(MethodView):
                         db.session.commit()
                         # generate the auth token
                         auth_token = user.encode_auth_token(user.uuid)
-                        responseObject = {
+                        response_object = {
                             'status': 'success',
                             'message': 'registered',
                             'auth_token': auth_token.decode(),
                             'user': user_to_dict(user)
                         }
                         print('User {} added'.format(user.username))
-                        return make_response(jsonify(responseObject)), 201
+                        return make_response(jsonify(response_object)), 201
                     except Exception as e:
-                        print('ERROR', e)
-                        responseObject = fail_responses['error']
+                        print('server_ERROR', e)
+                        response_object = fail_responses['server_error']
                 else:
-                    responseObject = fail_responses['username_exists']
+                    response_object = fail_responses['username_exists']
             else:
-                responseObject = fail_responses['email_exists']
+                response_object = fail_responses['email_exists']
         else:
-            responseObject = fail_responses['invalid_form']
+            response_object = fail_responses['invalid_form']
 
-        return make_response(jsonify(responseObject)), 401
+        return make_response(jsonify(response_object)), 401
 
 
 class ResendEmailAPI(MethodView):
@@ -137,26 +118,26 @@ class LoginAPI(MethodView):
                     post_data.get('password'), user.password):
                 auth_token = user.encode_auth_token(user.uuid)
                 if auth_token:
-                    responseObject = {
+                    response_object = {
                         'status': 'success',
                         'message': 'Successfully logged in.',
                         'auth_token': auth_token.decode(),
                         'user': user_to_dict(user)
                     }
-                    return make_response(jsonify(responseObject)), 200
+                    return make_response(jsonify(response_object)), 200
             else:
-                responseObject = {
+                response_object = {
                     'status': 'fail',
                     'message': 'invalidUser'
                 }
-                return make_response(jsonify(responseObject)), 404
+                return make_response(jsonify(response_object)), 404
         except Exception as e:
             print(e)
-            responseObject = {
+            response_object = {
                 'status': 'fail',
                 'message': 'Try again'
             }
-            return make_response(jsonify(responseObject)), 500
+            return make_response(jsonify(response_object)), 500
 
 
 class UserAPI(MethodView):
@@ -215,26 +196,26 @@ class LogoutAPI(MethodView):
                 # insert the token
                 db.session.add(blacklist_token)
                 db.session.commit()
-                responseObject = {
+                response_object = {
                     'status': 'success',
                     'message': 'Successfully logged out.'
                 }
                 print(user, '-> Logged Out')
-                return make_response(jsonify(responseObject)), 200
+                return make_response(jsonify(response_object)), 200
             except Exception as e:
-                responseObject = {
+                response_object = {
                     'status': 'fail',
                     'message': e
                 }
-                return make_response(jsonify(responseObject)), 200
+                return make_response(jsonify(response_object)), 200
         else:
-            responseObject = {
+            response_object = {
                 'status': 'fail',
                 'message': resp
             }
-            return make_response(jsonify(responseObject)), 401
+            return make_response(jsonify(response_object)), 401
 
-        return make_response(jsonify(responseObject)), 403
+        return make_response(jsonify(response_object)), 403
 
 
 class Verify(MethodView):

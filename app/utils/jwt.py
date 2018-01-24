@@ -1,6 +1,7 @@
 from flask import request, make_response, jsonify
 from app.models.User_model import User
 import datetime
+from app.utils.responses import jwt_fail_responses
 
 
 def get_user(request):
@@ -41,36 +42,36 @@ def get_jwt_user(request, should_be_confirmed=False):
     """
 
     # get the auth token
-    response = {
-        'status': 'fail',
-    }
 
     auth_header = request.headers.get('Authorization')
     if auth_header:
         try:
             auth_token = auth_header.split(" ")[1]
         except IndexError:
-            response['message'] = 'malformed'
+            response = jwt_fail_responses['malformed']
             return response
     else:
-        response['message'] = 'noAuthHeader'
+        response = jwt_fail_responses['noAuthHeader']
         return response
-    
+
     print(auth_token)
     decoded_response = User.decode_auth_token(auth_token)
     if decoded_response['status'] == "success":
         user = User.query.filter_by(
             uuid=decoded_response['message']).first()
         if not should_be_confirmed:
-            response['status'] = 'success'
-            response['message'] = user
+            response = {
+                'status': 'success',
+                'message': user
+            }
         else:
             if isinstance(user.confirmed_at, datetime.datetime):
-                response['status'] = 'success'
-                response['message'] = user
+                response = {
+                    'status': 'success',
+                    'message': user
+                }
             else:
-                response['status'] = 'fail'
-                response['message'] = 'userNotConfirmed'
+                response = jwt_fail_responses['userNotConfirmed']
     else:
         response = decoded_response
 
