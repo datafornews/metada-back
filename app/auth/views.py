@@ -201,7 +201,6 @@ class EditUserAPI(MethodView):
 
         data = Val.edit_user(post_data)
 
-
         if not data:
             print('Invalid Edit')
             return make_response(
@@ -228,21 +227,30 @@ class EditUserAPI(MethodView):
                     jsonify(fail_responses['email_exists'])), 401
             user.email = data['email']
 
+        print(user.roles)
+
         if data['password']:
+            if 'superuser' in user.roles:
+                return make_response(
+                    jsonify(fail_responses['superuser_password'])), 401
             user.set_password(data['password'])
-        
+
         user.last_name = data['last_name']
         user.first_name = data['first_name']
 
+        dic = user_to_dict(user)
+
         db.object_session(user).commit()
 
+        auth_header = request.headers.get('Authorization')
+        auth_token = auth_header.split(" ")[1]
+
         return make_response(
-                    jsonify({
-                        'status': 'success',
-                        'message': user_to_dict(user)
-                    })), 200
-
-
+            jsonify({
+                'status': 'success',
+                'user': dic,
+                'auth_token': auth_token
+            })), 200
 
 
 class LogoutAPI(MethodView):

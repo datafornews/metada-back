@@ -7,6 +7,7 @@ fail_list = ['email_exists',
              'server_error',
              'username_exists',
              'wrong_password',
+             'superuser_password'
              ]
 
 jwt_fail_list = [
