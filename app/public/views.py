@@ -3,7 +3,6 @@ import datetime
 from flask import Blueprint, request, make_response, jsonify, abort, Response
 from flask.views import MethodView
 
-
 from app import bcrypt, db
 from app.models.User_model import User
 from app.models.Graph_model import Edge, Entity, WikiData, DBMetaData
@@ -93,7 +92,7 @@ class UsernameExists(MethodView):
     def get(self):
         username = request.args.get('username')
         return jsonify({
-            'exists': User.query.filter_by(
+            'exists': username and User.query.filter_by(
                 username=username).first() is not None
         })
 
@@ -103,7 +102,7 @@ class EmailExists(MethodView):
     def get(self):
         email = request.args.get('email')
         return jsonify({
-            'exists': User.query.filter_by(email=email).first() is not None
+            'exists': email and User.query.filter_by(email=email).first() is not None
         })
 
 

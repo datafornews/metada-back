@@ -16,6 +16,8 @@ jwt_fail_list = [
     "invalid",
     "expired",
     "userNotConfirmed",
+    "noUserUUID",
+    "noDecodedResponseUUID"
 ]
 
 

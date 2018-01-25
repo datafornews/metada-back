@@ -36,3 +36,27 @@ def register_user(data):
     except Exception as e:
         print('Error', e)
         return None
+
+
+def edit_user(data):
+    valid = 1
+    data = json.loads(json.dumps(data))
+
+    username = data.get('username')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    email = data.get('email')
+    confirmPassword = data.get('confirmPassword')
+    password = data.get('password')
+    oldPassword = data.get('oldPassword')
+
+    valid *= not username or (len(username) > 3 and len(username) < 25)
+    valid *= not first_name or len(first_name) < 25
+    valid *= not last_name or len(last_name) < 25
+    valid *= check_email(email)
+    valid *= (not password and not confirmPassword) or (
+        confirmPassword == password and len(password) > 6)
+    valid *= len(oldPassword) > 6
+
+    return data if valid else None
+    

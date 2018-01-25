@@ -1,7 +1,10 @@
 from flask import request, make_response, jsonify
 from app.models.User_model import User
+from app import db
 import datetime
 from app.utils.responses import jwt_fail_responses
+import uuid
+
 
 
 def get_user(request):
@@ -42,23 +45,32 @@ def get_jwt_user(request, should_be_confirmed=False):
     """
 
     # get the auth token
-
     auth_header = request.headers.get('Authorization')
     if auth_header:
         try:
             auth_token = auth_header.split(" ")[1]
         except IndexError:
+            #token header is malformed
             response = jwt_fail_responses['malformed']
             return response
     else:
+        #request should have an Authorization header
         response = jwt_fail_responses['noAuthHeader']
         return response
 
-    print(auth_token)
     decoded_response = User.decode_auth_token(auth_token)
+    print(decoded_response)
+
+    if not decoded_response['message']:
+        # for some reason the message is empty -> for instance 
+        # the user has no uuid
+        response = jwt_fail_responses['noDecodedResponseUUID']
+        return response
+    
     if decoded_response['status'] == "success":
         user = User.query.filter_by(
             uuid=decoded_response['message']).first()
+
         if not should_be_confirmed:
             response = {
                 'status': 'success',

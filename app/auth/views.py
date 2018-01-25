@@ -65,7 +65,7 @@ class RegisterAPI(MethodView):
                         print('server_error', e)
                         response_object = fail_responses['server_error']
                         make_response(jsonify(response_object)), 500
-                        return 
+                        return
                 else:
                     response_object = fail_responses['username_exists']
             else:
@@ -125,7 +125,12 @@ class LoginAPI(MethodView):
                 response_object = fail_responses['wrong_password']
                 return make_response(jsonify(response_object)), 401
 
+            if not user.uuid:
+                user.uuid = uuid.uuid4().__str__()
+                db.object_session(user).commit()
+
             auth_token = user.encode_auth_token(user.uuid)
+
             if not auth_token:
                 response_object = fail_responses['server_error']
                 return make_response(jsonify(response_object)), 500
@@ -144,7 +149,7 @@ class LoginAPI(MethodView):
             return make_response(jsonify(response_object)), 500
 
 
-class UserAPI(MethodView):
+class UserStatusAPI(MethodView):
     """
     User Resource
     """
@@ -173,7 +178,71 @@ class UserAPI(MethodView):
                 })), 200
 
         return make_response(
-                jsonify(fail_responses['server_error'])), 500
+            jsonify(fail_responses['server_error'])), 500
+
+
+class EditUserAPI(MethodView):
+    """
+    Edit User Resource
+    """
+
+    def post(self):
+        jwt_response = get_user(request)
+        if jwt_response['status'] != "success":
+            return make_response(jsonify(jwt_response)), 401
+
+        user = jwt_response['message']
+
+        if not user:
+            return make_response(
+                jsonify(fail_responses['no_user'])), 401
+
+        post_data = request.get_json()
+
+        data = Val.edit_user(post_data)
+
+
+        if not data:
+            print('Invalid Edit')
+            return make_response(
+                jsonify(fail_responses['invalid_form'])), 401
+
+        if not verify_password(
+                data['oldPassword'], user.password):
+            response_object = fail_responses['wrong_password']
+            return make_response(jsonify(response_object)), 401
+
+        if data['username']:
+            candidate_user = User.query.filter_by(
+                email=data.get('username')).first()
+            if candidate_user and not candidate_user.id == user.id:
+                return make_response(
+                    jsonify(fail_responses['username_exists'])), 401
+            user.username = data['username']
+
+        if data['email']:
+            candidate_user = User.query.filter_by(
+                email=data.get('email')).first()
+            if candidate_user and not candidate_user.id == user.id:
+                return make_response(
+                    jsonify(fail_responses['email_exists'])), 401
+            user.email = data['email']
+
+        if data['password']:
+            user.set_password(data['password'])
+        
+        user.last_name = data['last_name']
+        user.first_name = data['first_name']
+
+        db.object_session(user).commit()
+
+        return make_response(
+                    jsonify({
+                        'status': 'success',
+                        'message': user_to_dict(user)
+                    })), 200
+
+
 
 
 class LogoutAPI(MethodView):
@@ -236,17 +305,18 @@ class Verify(MethodView):
                 return jsonify({
                     'verified': True
                 })
-            return make_response(jsonify({"error": "outdated link"})), 404 
+            return make_response(jsonify({"error": "outdated link"})), 404
         return abort(404)
 
 
 # define the API resources
 registration_view = RegisterAPI.as_view('register_api')
 login_view = LoginAPI.as_view('login_api')
-user_view = UserAPI.as_view('user_api')
+user_status_view = UserStatusAPI.as_view('user_api')
 logout_view = LogoutAPI.as_view('logout_api')
 resend_view = ResendEmailAPI.as_view('resend_email_api')
 verify_view = Verify.as_view('verify_api')
+edit_view = EditUserAPI.as_view('edit_view_api')
 
 # add Rules for API Endpoints
 auth_blueprint.add_url_rule(
@@ -261,7 +331,7 @@ auth_blueprint.add_url_rule(
 )
 auth_blueprint.add_url_rule(
     '/auth/status',
-    view_func=user_view,
+    view_func=user_status_view,
     methods=['POST']
 )
 auth_blueprint.add_url_rule(
@@ -280,4 +350,10 @@ auth_blueprint.add_url_rule(
     '/auth/verify',
     view_func=verify_view,
     methods=['GET']
+)
+
+auth_blueprint.add_url_rule(
+    '/auth/edit',
+    view_func=edit_view,
+    methods=['POST']
 )
