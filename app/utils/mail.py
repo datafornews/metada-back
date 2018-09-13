@@ -7,8 +7,8 @@ def send_register_email(new_user):
     try:
         sg = sendgrid.SendGridAPIClient(
             apikey=os.getenv('SENDGRID_API_KEY'))
-        from_email = Email("no-repy@oop.org", name='OOP No Reply')
-        subject = "Verify your OOP account"
+        from_email = Email("no-repy@metada.org", name='Metada No Reply')
+        subject = "Verify your Metada account"
         to_email = Email("vsch@protonmail.com")
         # to_email = Email(new_user.email)
         content = Content(

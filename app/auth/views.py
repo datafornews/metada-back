@@ -226,9 +226,10 @@ class EditUserAPI(MethodView):
             if candidate_user and not candidate_user.id == user.id:
                 return make_response(
                     jsonify(fail_responses['email_exists'])), 401
+            if data['email'] != user.email:
+                user.confirmed_at = None
+                send_register_email(user)
             user.email = data['email']
-
-        print(user.roles)
 
         if data['password']:
             if 'superuser' in user.roles:
@@ -289,6 +290,7 @@ class LogoutAPI(MethodView):
                 return make_response(jsonify(response_object)), 200
             except Exception as e:
                 response_object = fail_responses['server_error']
+                print(e)
                 return make_response(jsonify(response_object)), 500
         else:
             response_object = resp
