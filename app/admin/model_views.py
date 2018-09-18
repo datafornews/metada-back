@@ -202,8 +202,8 @@ class UserModelView(SafeModelView):
 
 class EdgeModelView(RoleSafeModelView):
     superuser_column_list = ['parent', 'child', 'value', 'special',
-                             'updated_by', 'updated_at', 'created_by', 'created_at', 'blacklist']
-    moderator_column_list = ['parent', 'child', 'value', 'special']
+                             'updated_by', 'updated_at', 'created_by', 'created_at']
+    moderator_column_list = ['parent', 'child', 'value', 'special', 'blacklist']
     superuser_form_columns = superuser_column_list
     moderator_form_columns = moderator_column_list
 
