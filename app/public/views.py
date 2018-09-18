@@ -3,10 +3,6 @@ import datetime
 from flask import Blueprint, request, make_response, jsonify, abort, Response
 from flask.views import MethodView
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 992afbcd411a29a14ac37b0585f9a511767535b7
 from app import bcrypt, db
 from app.models.User_model import User
 from app.models.Graph_model import Edge, Entity, WikiData, DBMetaData

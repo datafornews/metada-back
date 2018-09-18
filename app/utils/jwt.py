@@ -1,14 +1,10 @@
 from flask import request, make_response, jsonify
 from app.models.User_model import User
-<<<<<<< HEAD
 from app import db
 import datetime
 from app.utils.responses import jwt_fail_responses
 import uuid
 
-=======
-import datetime
->>>>>>> 992afbcd411a29a14ac37b0585f9a511767535b7
 
 
 def get_user(request):
