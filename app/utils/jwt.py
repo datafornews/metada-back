@@ -45,19 +45,11 @@ def get_jwt_user(request, should_be_confirmed=False):
     """
 
     # get the auth token
-<<<<<<< HEAD
-=======
-    response = {
-        'status': 'fail',
-    }
-
->>>>>>> 992afbcd411a29a14ac37b0585f9a511767535b7
     auth_header = request.headers.get('Authorization')
     if auth_header:
         try:
             auth_token = auth_header.split(" ")[1]
         except IndexError:
-<<<<<<< HEAD
             #token header is malformed
             response = jwt_fail_responses['malformed']
             return response
@@ -92,29 +84,6 @@ def get_jwt_user(request, should_be_confirmed=False):
                 }
             else:
                 response = jwt_fail_responses['userNotConfirmed']
-=======
-            response['message'] = 'malformed'
-            return response
-    else:
-        response['message'] = 'noAuthHeader'
-        return response
-    
-    print(auth_token)
-    decoded_response = User.decode_auth_token(auth_token)
-    if decoded_response['status'] == "success":
-        user = User.query.filter_by(
-            uuid=decoded_response['message']).first()
-        if not should_be_confirmed:
-            response['status'] = 'success'
-            response['message'] = user
-        else:
-            if isinstance(user.confirmed_at, datetime.datetime):
-                response['status'] = 'success'
-                response['message'] = user
-            else:
-                response['status'] = 'fail'
-                response['message'] = 'userNotConfirmed'
->>>>>>> 992afbcd411a29a14ac37b0585f9a511767535b7
     else:
         response = decoded_response
 
