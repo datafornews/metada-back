@@ -1,4 +1,5 @@
-from app import app, db, user_models, user_datastore
+# from app import app, db, user_models, user_datastore
+from app import app
 from flask_security.utils import encrypt_password
 
 
