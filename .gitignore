@@ -1,4 +1,5 @@
 metada_venv/*
+metada_env6/*
 *.pkl
 *.pickle
 __pycache__
