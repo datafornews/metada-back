@@ -1,4 +1,4 @@
-setuptools=57.4
+setuptools==57.4
 alembic==0.9.6
 appnope==0.1.0
 astroid==1.5.3
