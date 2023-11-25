@@ -67,7 +67,7 @@ traitlets==4.3.2
 typing==3.6.2
 urllib3==1.22
 wcwidth==0.1.7
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 wikipedia==1.4.0
 wrapt==1.10.11
 WTForms==2.1
