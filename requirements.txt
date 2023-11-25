@@ -65,7 +65,7 @@ SQLAlchemy==1.1.14
 SQLAlchemy-Utils==0.32.19
 traitlets==4.3.2
 typing==3.6.2
-urllib3==1.22
+urllib3==1.26.5
 wcwidth==0.1.7
 Werkzeug==0.14.1
 wikipedia==1.4.0
